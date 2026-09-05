@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú de Comidas Rápidas</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+            padding-bottom: 100px; /* Espacio para la barra del carrito */
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .menu-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 25px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.2s ease;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+        }
+        .card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        .card-content {
+            padding: 15px;
+        }
+        .card-title {
+            font-size: 1.25em;
+            margin: 0 0 8px 0;
+            color: #333;
+        }
+        .card-description {
+            font-size: 0.9em;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 15px;
+        }
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background-color: #fdfdfd;
+            border-top: 1px solid #eee;
+        }
+        .price {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        .btn-add {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-add:hover {
+            background-color: #27ae60;
+        }
+        .btn-disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        /* Barra flotante del Carrito (Abajo) */
+        .cart-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.2);
+            box-sizing: border-box;
+            z-index: 999;
+        }
+        .cart-info {
+            font-size: 1.1em;
+        }
+        .btn-ver-pedido {
+            background-color: #e67e22;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1em;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* Modal Resumen de Pago */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .close-btn {
+            position: absolute;
+            right: 15px;
+            top: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #aaa;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .cart-item-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .cart-item-controls button {
+            background-color: #bdc3c7;
+            border: none;
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .total-box {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2c3e50;
+            text-align: right;
+            margin: 20px 0 15px 0;
+        }
+        .btn-pagar {
+            width: 100%;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 1em;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 20px 0;
+        }
+        .success-message h2 {
+            color: #2ecc71;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Menú Principal</h1>
+    <div class="menu-container" id="menu"></div>
+
+    <!-- Barra Inferior del Carrito -->
+    <div class="cart-bar">
+        <div class="cart-info">
+            🛒 Productos seleccionados: <strong id="cartCount">0</strong> | Total: <strong>$<span id="cartTotal">0</span></strong>
+        </div>
+        <button class="btn-ver-pedido" onclick="abrirModalPedido()">Ver Pedido y Pagar</button>
+    </div>
+
+    <!-- Modal de Confirmación y Pago -->
+    <div id="orderModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="cerrarModal()">&times;</span>
+            
+            <div id="modalForm">
+                <h2>Resumen de tu Pedido</h2>
+                <div id="cartItemsList"></div>
+
+                <div class="total-box">
+                    Total a Pagar: $<span id="modalTotalMonto">0</span>
+                </div>
+
+                <button class="btn-pagar" onclick="procesarPago()">Confirmar y Pagar</button>
+            </div>
+
+            <!-- Pantalla de Éxito -->
+            <div id="successMessage" class="success-message">
+                <h2>¡Su pedido se ha realizado con éxito! 🎉</h2>
+                <p>Su orden ha sido enviada a la cocina.</p>
+                <button class="btn-pagar" onclick="reiniciarPedido()">Hacer otro pedido</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8081/api/productos';
+        let carrito = [];
+
+        async function cargarMenu() {
+            try {
+                const response = await fetch(API_URL);
+                const productos = await response.json();
+                
+                const menuContainer = document.getElementById('menu');
+                menuContainer.innerHTML = '';
+
+                productos.forEach(producto => {
+                    const imagen = producto.imagenUrl && producto.imagenUrl.trim() !== '' 
+                        ? producto.imagenUrl 
+                        : 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=500';
+
+                    const cardHtml = `
+                        <div class="card">
+                            <img src="${imagen}" alt="${producto.nombre}" onclick="agregarAlCarrito(${producto.idProducto}, '${producto.nombre}', ${producto.precio}, ${producto.disponible})" onerror="this.src='https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=500'">
+                            <div class="card-content">
+                                <h3 class="card-title">${producto.nombre}</h3>
+                                <p class="card-description">${producto.descripcion || 'Sin descripción disponible.'}</p>
+                            </div>
+                            <div class="card-footer">
+                                <span class="price">$${producto.precio}</span>
+                                ${producto.disponible 
+                                    ? `<button class="btn-add" onclick="agregarAlCarrito(${producto.idProducto}, '${producto.nombre}', ${producto.precio}, true)">+ Agregar</button>`
+                                    : `<button class="btn-add btn-disabled" disabled>Agotado</button>`
+                                }
+                            </div>
+                        </div>
+                    `;
+                    menuContainer.innerHTML += cardHtml;
+                });
+            } catch (error) {
+                console.error('Error al cargar el menú:', error);
+            }
+        }
+
+        function agregarAlCarrito(id, nombre, precio, disponible) {
+            if (!disponible) {
+                alert('Este producto no está disponible.');
+                return;
+            }
+
+            const itemExistente = carrito.find(item => item.id === id);
+            if (itemExistente) {
+                itemExistente.cantidad++;
+            } else {
+                carrito.push({ id, nombre, precio: parseFloat(precio), cantidad: 1 });
+            }
+
+            actualizarBarraCarrito();
+        }
+
+        function cambiarCantidad(id, cambio) {
+            const item = carrito.find(item => item.id === id);
+            if (item) {
+                item.cantidad += cambio;
+                if (item.cantidad <= 0) {
+                    carrito = carrito.filter(i => i.id !== id);
+                }
+            }
+            actualizarBarraCarrito();
+            renderizarModalCarrito();
+        }
+
+        function actualizarBarraCarrito() {
+            const totalItems = carrito.reduce((acc, item) => acc + item.cantidad, 0);
+            const totalMonto = carrito.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+
+            document.getElementById('cartCount').innerText = totalItems;
+            document.getElementById('cartTotal').innerText = totalMonto.toLocaleString();
+        }
+
+        function abrirModalPedido() {
+            if (carrito.length === 0) {
+                alert('Tu carrito está vacío. Agrega productos antes de pagar.');
+                return;
+            }
+
+            document.getElementById('modalForm').style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+            renderizarModalCarrito();
+            document.getElementById('orderModal').style.display = 'flex';
+        }
+
+        function renderizarModalCarrito() {
+            const container = document.getElementById('cartItemsList');
+            container.innerHTML = '';
+
+            let total = 0;
+            carrito.forEach(item => {
+                const subtotal = item.precio * item.cantidad;
+                total += subtotal;
+
+                container.innerHTML += `
+                    <div class="cart-item">
+                        <div>
+                            <strong>${item.nombre}</strong><br>
+                            <small>$${item.precio} c/u</small>
+                        </div>
+                        <div class="cart-item-controls">
+                            <button onclick="cambiarCantidad(${item.id}, -1)">-</button>
+                            <span>${item.cantidad}</span>
+                            <button onclick="cambiarCantidad(${item.id}, 1)">+</button>
+                            <span style="margin-left:10px; font-weight:bold;">$${subtotal}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('modalTotalMonto').innerText = total.toLocaleString();
+        }
+
+        function procesarPago() {
+            document.getElementById('modalForm').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'block';
+        }
+
+        function reiniciarPedido() {
+            carrito = [];
+            actualizarBarraCarrito();
+            cerrarModal();
+        }
+
+        function cerrarModal() {
+            document.getElementById('orderModal').style.display = 'none';
+        }
+
+        cargarMenu();
+    </script>
+</body>
+</html>
